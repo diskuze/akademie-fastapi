@@ -1,0 +1,25 @@
+query DiscussionComments(
+  $canonical: String = "www.novinky.cz/clanek/68037"
+  $offset: Int = 0
+) {
+  discussion(canonical: $canonical) {
+    id
+    canonical
+    comments(offset: $offset) {
+      ...Comment
+      replies {
+        ...Comment
+      }
+    }
+  }
+}
+
+fragment Comment on Comment {
+  id
+  content
+  user {
+    id
+    nick
+  	name
+  }
+}

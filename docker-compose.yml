@@ -1,0 +1,12 @@
+services:
+  database:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: diskuze
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
+volumes:
+  mariadb:

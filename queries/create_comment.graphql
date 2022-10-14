@@ -1,0 +1,17 @@
+mutation CreateComment(
+    $content: String = "test comment"
+    $discussionCanonical: String = "www.novinky.cz/clanek/68037"
+    $replyTo: Int
+) {
+    createComment(
+        input: {
+            content: $content
+            discussionCanonical: $discussionCanonical
+            replyTo: $replyTo
+        }
+    ) {
+        comment {
+            id
+        }
+    }
+}
