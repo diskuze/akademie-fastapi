@@ -1,5 +1,5 @@
 from pydantic import BaseSettings
-from pydantic.tools import lru_cache
+from functools import lru_cache
 
 
 class Config(BaseSettings):

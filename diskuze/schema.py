@@ -23,6 +23,25 @@ class Discussion:
     def from_model(discussion: models.Discussion) -> "Discussion":
         return Discussion(id=discussion.id, canonical=discussion.canonical)
 
+    @strawberry.field
+    async def comments(
+            self,
+            info: Info[AppContext, Any],
+            first: int = 10,
+            offset: int = 0,
+    ) -> List["Comment"]:
+        async with info.context.db.session() as session:
+            query = (
+                select(models.Comment)
+                .where(models.Comment.discussion_id == self.id)
+                .limit(first)
+                .offset(offset)
+            )
+            result = await session.execute(query)
+            comments = result.scalars()
+
+        return [Comment.from_model(comment) for comment in comments]
+
 
 # TODO: task 03: define GraphQL types for the rest of the models from `diskuze.models` module
 #  https://strawberry.rocks/docs/general/schema-basics
@@ -74,6 +93,24 @@ class Comment:
         comment = await info.context.data_loader.comment.load(self.reply_to_id)
         return Comment.from_model(comment)
 
+    @strawberry.field
+    async def replies(
+            self,
+            info: Info[AppContext, Any],
+            first: int = 10,
+            offset: int = 0,
+    ) -> List["Comment"]:
+        async with info.context.db.session() as session:
+            query = (
+                select(models.Comment)
+                .where(models.Comment.reply_to_id == self.id)
+                .limit(first)
+                .offset(offset)
+            )
+            result = await session.execute(query)
+            comments = result.scalars()
+
+        return [Comment.from_model(comment) for comment in comments]
 
 @strawberry.type
 class Query:

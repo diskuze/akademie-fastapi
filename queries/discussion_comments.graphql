@@ -1,13 +1,20 @@
 query DiscussionComments(
   $canonical: String = "www.novinky.cz/clanek/68037"
+	$first: Int = 2
   $offset: Int = 0
 ) {
   discussion(canonical: $canonical) {
     id
     canonical
-    comments(offset: $offset) {
+    comments (
+      first: $first
+      offset: $offset
+    ) {
       ...Comment
-      replies {
+      replies (
+        first: $first
+        offset: $offset
+      ) {
         ...Comment
       }
     }
@@ -20,6 +27,5 @@ fragment Comment on Comment {
   user {
     id
     nick
-  	name
   }
 }
