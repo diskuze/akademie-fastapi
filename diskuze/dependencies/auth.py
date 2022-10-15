@@ -16,6 +16,9 @@ from diskuze.dependencies.database import get_database
 
 async def get_auth_user(
         # TODO: what dependencies do we need?
+        request: Request,
+        db: Database = Depends(get_database),
+        authorization: str = Header(default=""),
 ) -> Optional[User]:
     """
     Gets currently authorized user based on Request headers and return that.
@@ -24,4 +27,20 @@ async def get_auth_user(
     The header should come in the form of:
     Authorization: User <nick>
     """
-    ...
+
+    # authorization = request.headers.get("authorization") or ""
+    authorization_split = authorization.split(" ", 1)
+
+    if len(authorization_split) != 2:
+        return None  # unauthorized or invalid format
+
+    auth_type, nick = authorization_split
+    if auth_type != "User" or not nick:
+        return None  # invalid type or empty nick
+
+    async with db.session() as session:
+        query = select(User).where(User.nick == nick)
+        result = await session.execute(query)
+        user = result.scalar()
+
+    return user

@@ -195,6 +195,9 @@ class Mutation:
         if not input_.content:
             return CommentOutput(error="please, provide content")
 
+        if not info.context.auth_user:
+            return CommentOutput(error="please, authorize")
+
         # TODO: create the comment in database
         async with info.context.db.session() as session:
             query = (
@@ -225,7 +228,7 @@ class Mutation:
                 content=input_.content,
                 discussion_id=discussion_id,
                 reply_to_id=input_.reply_to,
-                user_id=23,
+                user_id=info.context.auth_user.id,
             )
             session.add(comment)
 

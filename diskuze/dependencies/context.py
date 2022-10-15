@@ -23,9 +23,11 @@ class AppContext(BaseContext):
         config: Config = Depends(get_config),
         db: Database = Depends(get_database),
         data_loader: DataLoaderRegistry = Depends(DataLoaderRegistry),
+        auth_user: Optional[User] = Depends(get_auth_user),
     ):
         super().__init__()
         self.config = config
         self.db = db
         self.data_loader = data_loader
         # TODO: task 07: add authenticated user dependency to context
+        self.auth_user = auth_user
