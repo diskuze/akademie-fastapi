@@ -47,7 +47,24 @@ class DatabaseIdentityDataLoader:
 #   https://strawberry.rocks/docs/guides/dataloaders
 #   https://github.com/encode/httpx
 
-# async def load_full_name(...) -> List[Optional[str]]: ...
+async def load_full_name(ids: List[int]) -> List[Optional[str]]:
+    async with httpx.AsyncClient() as client:
+        responses = await asyncio.gather(
+            *(
+                client.get(f"https://randomuser.me/api/?seed={id_}")
+                for id_ in ids
+            )
+        )
+
+    def extract_name(response):
+        if response.status_code != 200:
+            return None
+
+        name_parts = response.json()["results"][0]["name"]
+        first, last = name_parts["first"], name_parts["last"]
+        return f"{first} {last}"
+
+    return [extract_name(response) for response in responses]
 
 
 class DataLoaderRegistry:
@@ -63,3 +80,4 @@ class DataLoaderRegistry:
         self.user = DataLoader(load_fn=user_data_loader.load)
 
         # TODO: task 08: add the name loader to registry to access it properly
+        self.full_name = DataLoader(load_fn=load_full_name)

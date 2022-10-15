@@ -3,6 +3,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 
+import httpx
 import strawberry
 from sqlalchemy import select, exists
 from sqlalchemy.sql.functions import count
@@ -49,6 +50,10 @@ class Discussion:
 class User:
     id: int
     nick: str
+
+    @strawberry.field
+    async def name(self, info: Info[AppContext, Any]) -> Optional[str]:
+        return await info.context.data_loader.full_name.load(self.id)
 
 
 @strawberry.type
