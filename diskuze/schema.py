@@ -4,7 +4,7 @@ from typing import List
 from typing import Optional
 
 import strawberry
-from sqlalchemy import select
+from sqlalchemy import select, exists
 from sqlalchemy.sql.functions import count
 from strawberry.types import Info
 
@@ -177,7 +177,8 @@ class CommentInput:
 
 @strawberry.type
 class CommentOutput:
-    comment: None = None
+    comment: Optional[Comment] = None
+    error: Optional[str] = None
 
 
 @strawberry.type
@@ -191,12 +192,44 @@ class Mutation:
             input_: strawberry.arguments.Annotated[CommentInput, strawberry.argument(name="input")],
     ) -> CommentOutput:
         # TODO: check input data
-        ...
+        if not input_.content:
+            return CommentOutput(error="please, provide content")
 
         # TODO: create the comment in database
-        ...
+        async with info.context.db.session() as session:
+            query = (
+                select(models.Discussion.id)
+                .where(models.Discussion.canonical == input_.discussion_canonical)
+            )
+            result = await session.execute(query)
+            discussion_id = result.scalar()
 
-        return CommentOutput(comment=None)
+            if not discussion_id:
+                return CommentOutput(error="discussion does not exist")
+
+            if input_.reply_to is not None:
+                query = select(
+                    exists(
+                        select(1)
+                        .select_from(models.Comment)
+                        .where(models.Comment.id == input_.reply_to)
+                    )
+                )
+                result = await session.execute(query)
+                reply_exists = result.scalar()
+
+                if not reply_exists:
+                    return CommentOutput(error="reply does not exist")
+
+            comment = models.Comment(
+                content=input_.content,
+                discussion_id=discussion_id,
+                reply_to_id=input_.reply_to,
+                user_id=23,
+            )
+            session.add(comment)
+
+        return CommentOutput(comment=Comment.from_model(comment))
 
 
 schema = strawberry.Schema(Query, Mutation)
