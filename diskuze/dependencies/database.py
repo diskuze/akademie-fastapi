@@ -32,8 +32,8 @@ class Database:
             except Exception:
                 await session.rollback()
                 raise
-            finally:
-                await session.close()
+            # finally:
+            #     await session.close()
 
 
 def get_database(config: Config = Depends(get_config)):

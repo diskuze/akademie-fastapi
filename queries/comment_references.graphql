@@ -1,0 +1,22 @@
+query Comment(
+  $id: Int! = 32
+) {
+  comment(
+    id: $id
+  ) {
+    id
+    content
+    user {
+      id
+      nick
+    }
+    discussion {
+      id
+      canonical
+    }
+    replyTo {
+      id
+      content
+    }
+  }
+}

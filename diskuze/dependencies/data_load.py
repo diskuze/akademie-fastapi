@@ -33,6 +33,7 @@ class DatabaseIdentityDataLoader:
         self.db = db
         self.model = model
 
+    # TODO: task
     async def load(self, ids: List[int]) -> List[T]:
         async with self.db.session() as session:
             query = select(self.model).where(self.model.id.in_(ids))
@@ -57,5 +58,8 @@ class DataLoaderRegistry:
     def __init__(self, db: Database = Depends(get_database)):
         self.comment = DataLoader(load_fn=DatabaseIdentityDataLoader(db, Comment).load)
         self.discussion = DataLoader(load_fn=DatabaseIdentityDataLoader(db, Discussion).load)
-        self.user = DataLoader(load_fn=DatabaseIdentityDataLoader(db, User).load)
+
+        user_data_loader = DatabaseIdentityDataLoader(db, User)
+        self.user = DataLoader(load_fn=user_data_loader.load)
+
         # TODO: task 08: add the name loader to registry to access it properly

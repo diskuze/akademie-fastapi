@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from typing import List
 from typing import Optional
@@ -15,13 +16,63 @@ from diskuze import models
 #  https://strawberry.rocks/docs/general/schema-basics
 @strawberry.type
 class Discussion:
-    ...
+    id: int
+    canonical: str
+
+    @staticmethod
+    def from_model(discussion: models.Discussion) -> "Discussion":
+        return Discussion(id=discussion.id, canonical=discussion.canonical)
+
 
 # TODO: task 03: define GraphQL types for the rest of the models from `diskuze.models` module
 #  https://strawberry.rocks/docs/general/schema-basics
+@strawberry.type
+class User:
+    id: int
+    nick: str
 
-# TODO: task 04: define relationships Comment.user, Comment.discussion, Comment.replyTo
-#  https://strawberry.rocks/docs/guides/dataloaders
+
+@strawberry.type
+class Comment:
+    id: int
+    content: str
+
+    user_id: strawberry.Private[int]
+    discussion_id: strawberry.Private[int]
+    reply_to_id: strawberry.Private[int]
+
+    @staticmethod
+    def from_model(comment: models.Comment) -> "Comment":
+        return Comment(
+            id=comment.id,
+            content=comment.content,
+            discussion_id=comment.discussion_id,
+            user_id=comment.user_id,
+            reply_to_id=comment.reply_to_id,
+        )
+
+    # TODO: task 04: define relationships Comment.user, Comment.discussion, Comment.replyTo
+    #  https://strawberry.rocks/docs/guides/dataloaders
+    @strawberry.field
+    async def user(self, info: Info[AppContext, Any]) -> User:
+        user = await info.context.data_loader.user.load(self.user_id)
+        return User(
+            id=user.id,
+            nick=user.nick,
+        )
+
+    @strawberry.field
+    async def discussion(self, info: Info[AppContext, Any]) -> Discussion:
+        discussion = await info.context.data_loader.discussion.load(self.discussion_id)
+        return Discussion.from_model(discussion)
+
+    @strawberry.field
+    async def reply_to(self, info: Info[AppContext, Any]) -> Optional["Comment"]:
+        if not self.reply_to_id:
+            return None
+
+        comment = await info.context.data_loader.comment.load(self.reply_to_id)
+        return Comment.from_model(comment)
 
 
 @strawberry.type
@@ -41,6 +92,43 @@ class Query:
 
     # TODO: task 02: define endpoint to get a discussion from
     #  https://strawberry.rocks/docs/general/queries
+    @strawberry.field(description="Gets a discussion by its canonical")
+    async def discussion(
+            self,
+            info: Info[AppContext, Any],
+            canonical: str,
+    ) -> Optional[Discussion]:
+        async with info.context.db.session() as session:
+            query = (
+                select(models.Discussion)
+                .where(models.Discussion.canonical == canonical)
+            )
+            result = await session.execute(query)
+            discussion = result.scalar()
+
+        if not discussion:
+            return None
+
+        return Discussion.from_model(discussion)
+
+    @strawberry.field(description="Gets a comment by its id")
+    async def comment(
+            self,
+            info: Info[AppContext, Any],
+            id_: strawberry.arguments.Annotated[int, strawberry.argument(name="id")],
+    ) -> Optional[Comment]:
+        async with info.context.db.session() as session:
+            query = (
+                select(models.Comment)
+                .where(models.Comment.id == id_)
+            )
+            result = await session.execute(query)
+            comment = result.scalar()
+
+        if not comment:
+            return None
+
+        return Comment.from_model(comment)
 
 
 @strawberry.input
