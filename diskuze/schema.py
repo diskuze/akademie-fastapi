@@ -52,7 +52,7 @@ class CommentInput:
 
 @strawberry.type
 class CommentOutput:
-    comment: Optional["Comment"] = None
+    comment: None = None
 
 
 @strawberry.type
